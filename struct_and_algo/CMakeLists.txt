@@ -1,0 +1,2 @@
+add_executable(reverse_polish_notation reverse_polish_notation.cpp)
+add_executable(permutation permutation.cpp)
