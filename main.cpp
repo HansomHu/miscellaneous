@@ -712,6 +712,37 @@ void test_cast_array_to_struct_pointer() {
     delete [] arr;
 }
 
+void test_priority_queue() {
+    std::priority_queue<int, std::vector<int>, std::less<int>> que1;
+    que1.push(3);
+    que1.push(2);
+    que1.push(5);
+    std::cout << "operator std::less: ";
+    while (!que1.empty()) {
+        std::cout << que1.top() << " ";
+        que1.pop();
+    }
+    std::cout << "\noperator std::greater: ";
+    std::priority_queue<int, std::vector<int>, std::greater<int>> que2;
+    que2.push(3);
+    que2.push(2);
+    que2.push(5);
+    while (!que2.empty()) {
+        std::cout << que2.top() << " ";
+        que2.pop();
+    }
+    std::cout << "\noperator < ";
+    auto less = [] (const auto& a, const auto& b) { return a < b; };
+    std::priority_queue<int, std::vector<int>, decltype(less)> que3{less};
+    que3.push(3);
+    que3.push(2);
+    que3.push(5);
+    while (!que3.empty()) {
+        std::cout << que3.top() << " ";
+        que3.pop();
+    }
+}
+
 int main(int argc, char** argv) {
 #if 0
     std::cout << "Hello, world! MAX is: " << MAX << "\n";
@@ -768,7 +799,8 @@ int main(int argc, char** argv) {
     // int n;
     // std::cin >> n;
     // test_dynamic_array(n);
-    test_cast_array_to_struct_pointer();
+    // test_cast_array_to_struct_pointer();
+    test_priority_queue();
 
     return 0;
 }
@@ -803,7 +835,7 @@ void thr(std::shared_ptr<Base> p, int num)
     }
     std::cout << "thread #" << num << " exits\n";
 }
- 
+
 int main()
 {
     std::shared_ptr<Base> p = std::make_shared<Derived>();
