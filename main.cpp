@@ -712,6 +712,18 @@ void test_cast_array_to_struct_pointer() {
     delete [] arr;
 }
 
+struct PriorityQueueTmp1 {
+    int x;
+    PriorityQueueTmp1(int a) : x(a) {}
+    // 大顶堆
+    bool operator<(const PriorityQueueTmp1& a) const { return x < a.x; }
+};
+
+struct PriorityQueueTmp2 {
+    // 大顶堆
+    bool operator() (PriorityQueueTmp1& a, PriorityQueueTmp1& b) { return a.x < b.x; }
+};
+
 void test_priority_queue() {
     std::priority_queue<int, std::vector<int>, std::less<int>> que1;
     que1.push(3);
@@ -740,6 +752,29 @@ void test_priority_queue() {
     while (!que3.empty()) {
         std::cout << que3.top() << " ";
         que3.pop();
+    }
+
+    std::cout << "\noperator struct < ";
+    PriorityQueueTmp1 a(1);
+    PriorityQueueTmp1 b(2);
+    PriorityQueueTmp1 c(3);
+    std::priority_queue<PriorityQueueTmp1> que4;
+    que4.push(b);
+    que4.push(c);
+    que4.push(a);
+    while (!que4.empty()) {
+        std::cout << que4.top().x << " ";
+        que4.pop();
+    }
+
+    std::cout << "\n 仿函数 ";
+    std::priority_queue<PriorityQueueTmp1, std::vector<PriorityQueueTmp1>, PriorityQueueTmp2> que5;
+    que5.push(b);
+    que5.push(c);
+    que5.push(a);
+    while (!que5.empty()) {
+        std::cout << que5.top().x << " ";
+        que5.pop();
     }
 }
 
