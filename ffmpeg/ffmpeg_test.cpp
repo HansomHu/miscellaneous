@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    // auto videoStream = av_find_best_stream(fmtCtx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     // 查找指定的已注册过的解码器, 不需要手动释放decoder指针
     auto decoder = avcodec_find_decoder(codecCtx->codec_id);
     if (auto ret = avcodec_open2(codecCtx, decoder, nullptr)) {
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
                 // cv::imwrite("frame_" + std::to_string(frameNum) + ".jpg", mat);
             }
         }
+        av_packet_unref(avPacket);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
