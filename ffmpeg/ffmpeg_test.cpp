@@ -1,12 +1,16 @@
 #include <unistd.h> // getcwd()
 #include <iostream>
 #include <string>
+#include <thread>
+
+#include <opencv2/opencv.hpp>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 #ifdef __cplusplus
 }
 #endif
@@ -50,5 +54,94 @@ int main(int argc, char** argv) {
     std::cout << "Total time: " << min << " m " << sec << " s" << std::endl;
     av_dump_format(fmtCtx, 0, videoPath.c_str(), 0); 
 
+    AVCodecContext* codecCtx = nullptr;
+    int videoIndex = -1;
+    // 判断媒体文件中的流类型，并获取video流的index
+    for (int index = 0; index < fmtCtx->nb_streams; index++) {
+        codecCtx = fmtCtx->streams[index]->codec;
+        videoIndex = codecCtx->codec_type == AVMEDIA_TYPE_VIDEO ? index : videoIndex;
+        std::cout << "流序号: " << index << ", 类型为: " << av_get_media_type_string(codecCtx->codec_type) << std::endl;
+        // 已经找打视频品流
+        if (videoIndex != -1) {
+            break;
+        }
+    }
+
+    // 查找指定的已注册过的解码器, 不需要手动释放decoder指针
+    auto decoder = avcodec_find_decoder(codecCtx->codec_id);
+    if (auto ret = avcodec_open2(codecCtx, decoder, nullptr)) {
+        std::cout << "打开解码器失败: " << ret << std::endl;
+        return -2;
+    }
+
+    // 获得SwsContext上下文，可以用来对颜色空间、尺寸进行调整
+    auto swsCtx = sws_getContext(codecCtx->width, codecCtx->height, codecCtx->pix_fmt,
+        codecCtx->width, codecCtx->height, AV_PIX_FMT_BGRA, SWS_FAST_BILINEAR, 0, 0, 0);
+    // 获得指定尺寸图像的内存大小
+    auto numBytes = avpicture_get_size(AV_PIX_FMT_BGRA, codecCtx->width, codecCtx->height);
+    // 用户分配空间，以存放解码后的图像数据
+    auto outBuffer = std::shared_ptr<uint8_t>((uint8_t*)av_malloc(numBytes), [](auto ptr) {
+        av_free(ptr);
+    });
+    auto avFrame = av_frame_alloc();
+    auto avFrameRGB32 = av_frame_alloc();
+    avpicture_fill((AVPicture*)avFrameRGB32, outBuffer.get(), AV_PIX_FMT_BGRA, codecCtx->width, codecCtx->height);
+
+    // 开始读取数据帧并解码
+    AVPacket* avPacket = av_packet_alloc();
+    int packetNum = 0;
+    int frameNum = 0;
+    while (av_read_frame(fmtCtx, avPacket) >= 0) {
+        if (avPacket->stream_index == videoIndex) {
+            ++packetNum;
+            // 发送数据给编码器
+            if (auto ret = avcodec_send_packet(codecCtx, avPacket)) {
+                std::cout << "Error: avcodec_send_packet() failed: " << ret << std::endl;
+                break;
+            }
+            // 一个packet中可能存在多个frame
+            while (!avcodec_receive_frame(codecCtx, avFrame)) {
+                ++frameNum;
+                sws_scale(swsCtx, avFrame->data, avFrame->linesize, 0,
+                    codecCtx->height, avFrameRGB32->data, avFrameRGB32->linesize);
+                // cv::Mat mat(codecCtx->height, codecCtx->width, CV_8UC4, outBuffer.get());
+                // std::cout << "==== write frame: " << frameNum << std::endl;
+                // cv::imwrite("frame_" + std::to_string(frameNum) + ".jpg", mat);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    std::cout << "Total packets: " << packetNum << ", total frame: " << frameNum << std::endl;
+    std::cout << "释放回收资源...\n";
+    if (avPacket) {
+        av_packet_free(&avPacket);
+        std::cout << "av_packet_free(&avPacket)\n";
+    }
+    if (avFrameRGB32) {
+        av_frame_free(&avFrameRGB32);
+        std::cout << "av_frame_free(&avFrameRGB32)\n";
+    }
+    if (avFrame) {
+        av_frame_free(&avFrame);
+        std::cout << "av_frame_free(&avFrame)\n";
+    }
+    if (swsCtx) {
+        sws_freeContext(swsCtx);
+        std::cout << "sws_freeContext(swsCtx)\n";
+    }
+    if(codecCtx)
+    {
+        avcodec_close(codecCtx);
+        codecCtx = 0;
+        std::cout << "avcodec_close(codecCtx);\n";
+    }
+    if(fmtCtx)
+    {
+        avformat_close_input(&fmtCtx);
+        avformat_free_context(fmtCtx);
+        fmtCtx = 0;
+        std::cout << "avformat_free_context(fmtCtx)";
+    }
     return 0;
 }
