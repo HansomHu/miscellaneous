@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
     av_dict_set(&opt, "rtsp_transport", "tcp", 0);
     av_dict_set(&opt, "max_delay", "550", 0);
     auto ret = avformat_open_input(&fmtCtx, rtmpUrl.c_str(), nullptr, &opt);
+    av_dict_free(&opt);
 #else
     // Open local media
     auto ret = avformat_open_input(&fmtCtx, videoPath.c_str(), nullptr, nullptr);
