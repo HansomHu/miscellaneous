@@ -15,6 +15,9 @@ extern "C" {
 }
 #endif
 
+// ffmpeg的API是否为新版本
+#define NEW_API_VERSION 1
+
 const std::string videoPath = "../../ffmpeg/test.mp4";
 const std::string rtmpUrl = "http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8";
 
@@ -56,6 +59,9 @@ int main(int argc, char** argv) {
 
     AVCodecContext* codecCtx = nullptr;
     int videoIndex = -1;
+
+#if NEW_API_VERSION == 0
+    // NOTE: fmCtx->streams[index]->codec字段已经被废弃(codecpar代替)，官方不建议使用该方法获得codecCtx，当然现阶段这样写也没问题
     // 判断媒体文件中的流类型，并获取video流的index
     for (int index = 0; index < fmtCtx->nb_streams; index++) {
         codecCtx = fmtCtx->streams[index]->codec;
@@ -67,9 +73,32 @@ int main(int argc, char** argv) {
         }
     }
 
-    // auto videoStream = av_find_best_stream(fmtCtx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     // 查找指定的已注册过的解码器, 不需要手动释放decoder指针
     auto decoder = avcodec_find_decoder(codecCtx->codec_id);
+#else
+    // NOTE: 这段获取codecCtx代码是4.0版本（或者更老？）官方example里的用法
+    videoIndex = av_find_best_stream(fmtCtx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    if (videoIndex < 0) {
+        std::cout << "Could not find " << av_get_media_type_string(AVMEDIA_TYPE_VIDEO)
+            << " stream in input file: " << videoPath << std::endl;
+        return -1;
+    }
+    auto stream = fmtCtx->streams[videoIndex];
+    // 查找指定的已注册过的解码器, 不需要手动释放decoder指针
+    auto decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+    // 使用avcodec_alloc_context3()来手动申请codecCtx结构体内存，最后需要手动释放内存
+    codecCtx = avcodec_alloc_context3(decoder);
+    if (!codecCtx) {
+        std::cout << "Failed to allocate the " << av_get_media_type_string(AVMEDIA_TYPE_VIDEO) << " codec context\n";
+        return -1;
+    }
+    // Copy codec parameters from input stream to output codec context
+    if (avcodec_parameters_to_context(codecCtx, stream->codecpar) < 0) {
+        std::cout << "Failed to copy " << av_get_media_type_string(AVMEDIA_TYPE_VIDEO) << " codec parameters to decoder context\n";
+        return -1;
+    }
+#endif
+
     if (auto ret = avcodec_open2(codecCtx, decoder, nullptr)) {
         std::cout << "打开解码器失败: " << ret << std::endl;
         return -2;
@@ -110,6 +139,7 @@ int main(int argc, char** argv) {
                 // cv::imwrite("frame_" + std::to_string(frameNum) + ".jpg", mat);
             }
         }
+        // 不要忘记unref packet
         av_packet_unref(avPacket);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -135,6 +165,9 @@ int main(int argc, char** argv) {
     if(codecCtx)
     {
         avcodec_close(codecCtx);
+#if NEW_API_VERSION == 1
+        avcodec_free_context(&codecCtx);
+#endif
         codecCtx = 0;
         std::cout << "avcodec_close(codecCtx);\n";
     }
