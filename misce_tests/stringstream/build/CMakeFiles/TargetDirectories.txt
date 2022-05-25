@@ -1,0 +1,3 @@
+/Users/huyuexiang/workspace/test_code/stringstream/build/CMakeFiles/rebuild_cache.dir
+/Users/huyuexiang/workspace/test_code/stringstream/build/CMakeFiles/edit_cache.dir
+/Users/huyuexiang/workspace/test_code/stringstream/build/CMakeFiles/stringstream.dir

@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/huyuexiang/workspace/test_code/stringstream/stringstream.cpp
+unistd.h
+-
+chrono
+-
+fstream
+-
+iostream
+-
+memory
+-
+sstream
+-
+string
+-
+vector
+-
+
