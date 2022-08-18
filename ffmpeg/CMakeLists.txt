@@ -12,6 +12,7 @@ elseif(UNIX)
     endif()
 
     foreach(lib IN ITEMS avdevice avfilter avcodec avformat swresample swscale avutil)
+        set(LIB "LIB-NOTFOUND")
         find_library(LIB NAME ${lib} HINTS ${FFMPEG_LIBRARY_DIRS})
         list(APPEND FFMPEG_LIBRARIES ${LIB})
     endforeach()
