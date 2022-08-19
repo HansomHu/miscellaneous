@@ -13,5 +13,4 @@ add_executable(miscellaneous main.cpp)
 target_include_directories(miscellaneous PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(struct_and_algo)
-# TODO(hyx) refactor ffmpeg source code with V5.0
-# add_subdirectory(ffmpeg)
+add_subdirectory(ffmpeg)

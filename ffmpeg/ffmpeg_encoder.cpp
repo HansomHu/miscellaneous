@@ -15,6 +15,16 @@ extern "C" {
 }
 #endif
 
+namespace helper {
+static inline std::string avStrError(int errnum) {
+    char buf[128] = {0};
+    if (!av_strerror(errnum, buf, sizeof(buf))) {
+        return buf;
+    }
+    return std::string("Unkown errnum: ") + std::to_string(errnum);
+}
+} // namespace helper
+
 class EncoderH264 final {
 public:
     EncoderH264(const std::string& filename) : m_outFile(filename) {}
@@ -124,7 +134,7 @@ bool EncoderH264::openOutputFile() {
     if (!(m_outFmt->flags & AVFMT_NOFILE)) {
         auto ret = avio_open(&m_fmtCtx->pb, m_outFile.c_str(), AVIO_FLAG_WRITE);
         if (ret < 0) {
-            std::cout << "Could not open " << m_outFile << av_err2str(ret) << std::endl;
+            std::cout << "Could not open " << m_outFile << helper::avStrError(ret) << std::endl;
             return false;
         }
         return true;
@@ -136,7 +146,7 @@ bool EncoderH264::openVideo() {
     int ret = -1;
     ret = avcodec_open2(m_codecCtx, m_codec, &m_opt);
     if (ret < 0) {
-        std::cout << "Could not open video codec: " << av_err2str(ret) << std::endl;
+        std::cout << "Could not open video codec: " << helper::avStrError(ret) << std::endl;
         return false;
     }
     /* copy the stream parameters to the muxer */
@@ -152,7 +162,7 @@ bool EncoderH264::openVideo() {
 bool EncoderH264::writeHeader() {
     auto ret = avformat_write_header(m_fmtCtx, &m_opt);
     if (ret < 0) {
-        std::cout << "Error occured when open file: " << av_err2str(ret) << std::endl;
+        std::cout << "Error occured when open file: " << helper::avStrError(ret) << std::endl;
         return false;
     }
     return true;
@@ -170,7 +180,7 @@ bool EncoderH264::writeTrailer() {
 bool EncoderH264::encode(AVFrame* inputFrame) {
     auto ret = avcodec_send_frame(m_codecCtx, inputFrame);
     if (ret < 0) {
-        std::cout << "Error sending a frame to encoder: " << av_err2str(ret) << std::endl;
+        std::cout << "Error sending a frame to encoder: " << helper::avStrError(ret) << std::endl;
         return false;
     }
     while (ret >= 0) {
@@ -179,7 +189,7 @@ bool EncoderH264::encode(AVFrame* inputFrame) {
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
             break;
         } else if (ret < 0) {
-            std::cout << "Error encoding a frame: " << av_err2str(ret) << std::endl;
+            std::cout << "Error encoding a frame: " << helper::avStrError(ret) << std::endl;
             return false;
         }
         /* rescale output packet timestamp values from codec to stream timebase */
@@ -188,7 +198,7 @@ bool EncoderH264::encode(AVFrame* inputFrame) {
         ret = av_interleaved_write_frame(m_fmtCtx, &pkt);
         av_packet_unref(&pkt);
         if (ret < 0) {
-            std::cout << "Error while writing output packet: " << av_err2str(ret) << std::endl;
+            std::cout << "Error while writing output packet: " << helper::avStrError(ret) << std::endl;
             return false;
         }
     }
@@ -203,12 +213,12 @@ int main(int argc, char** argv) {
     // Open local media
     auto ret = avformat_open_input(&fmtCtx, videoPath.c_str(), nullptr, nullptr);
     if (ret != 0) {
-        std::cout << "avformat_open_input() failed: " << av_err2str(ret) << std::endl;
+        std::cout << "avformat_open_input() failed: " << helper::avStrError(ret) << std::endl;
         return -1;
     }
     std::cout << "avformat_open_input() success!" << std::endl;
     if ((ret = avformat_find_stream_info(fmtCtx, nullptr)) < 0) {
-        std::cout << "avformat_find_stream_info() failed: " << av_err2str(ret) << std::endl;
+        std::cout << "avformat_find_stream_info() failed: " << helper::avStrError(ret) << std::endl;
         return -1;
     }
     std::cout << "avformat_find_stream_info() success!" << std::endl;
