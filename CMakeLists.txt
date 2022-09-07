@@ -14,3 +14,4 @@ target_include_directories(miscellaneous PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(struct_and_algo)
 add_subdirectory(ffmpeg)
+add_subdirectory(misce_tests/OpenCV)

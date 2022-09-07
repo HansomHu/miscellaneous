@@ -1,5 +1,7 @@
+#include <cmath>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 #include <gflags/gflags.h>
@@ -49,8 +51,8 @@ bool test_draw_polyline() {
     std::vector<cv::Point> points(POINT_NUM);
 
     for (size_t i = 0; i < points.size(); ++i) {
-        points[i].x = int(std::cosf(thetas[i]) * RADIUS + WIDTH / 2);
-        points[i].y = int(std::sinf(thetas[i]) * RADIUS + HEIGHT / 2);
+        points[i].x = int(std::cos(thetas[i]) * RADIUS + WIDTH / 2);
+        points[i].y = int(std::sin(thetas[i]) * RADIUS + HEIGHT / 2);
         // cv::circle(image, points[i], 5, cv::Scalar(0, 0, 255), 2, 8, 0);
     }
 
@@ -228,6 +230,37 @@ void test_png_read_and_write() {
     cv::imwrite("organ.png", organ);
 }
 
+void test_bgr_to_yuv() {
+    cv::Mat img = cv::imread("./test.jpg");
+    std::cout << "img.cols: " << img.cols << ", img.rows: " << img.rows << std::endl;
+    int w = img.cols;
+    int h = img.rows;
+    int yuv_size = w * h * 3 / 2;
+    cv::Mat I420;
+    cv::cvtColor(img, I420, cv::COLOR_BGR2YUV_IYUV);
+    std::cout << "I420.cols " << I420.cols << ", I420.rows " << I420.rows
+        << ", type: " << I420.type() << std::endl;
+    auto ptr = std::unique_ptr<uint8_t>(new uint8_t[w * h * 3 / 2]);
+    memcpy(ptr.get(), I420.data, w * h);
+    auto uv_dst = ptr.get() + w * h;
+    auto uv_src = I420.data + w * h;
+    for (int i = 0; i < w * h / 2; i += 2) {
+        uv_dst[i] = uv_src[w * h / 4 + i / 2]; // v
+        uv_dst[i + 1] = uv_src[i / 2]; // u
+    }
+    {
+        // write nv21 to file
+        std::ofstream ofs("170x164_nv21.yuv", std::ios::binary);
+        if (ofs.good()) {
+            ofs.write(reinterpret_cast<const char*>(ptr.get()), w * h * 3 / 2);
+        }
+    }
+    cv::Mat nv21 = cv::Mat(h * 3 / 2, w, CV_8UC1, ptr.get());
+    cv::Mat img1;
+    cv::cvtColor(nv21, img1, cv::COLOR_YUV2BGR_NV21);
+    cv::imwrite("test1.jpg", img1);
+}
+
 int main(int argc, char** argv) {
     google::ParseCommandLineFlags(&argc, &argv, true);
     // test_png_compression();
@@ -238,6 +271,7 @@ int main(int argc, char** argv) {
     // test_gaussian_blur();
     // test_exception_catch();
     // test_png_read_and_write();
-    test_gaussian_blur_on_rect();
+    // test_gaussian_blur_on_rect();
+    test_bgr_to_yuv();
     return 0;
 }

@@ -13,8 +13,8 @@ include_directories(
 add_executable(${PROJECT_NAME} test_opencv.cpp)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} gflags)
 
-add_executable(traverse_triangle traverse_triangle.cpp)
-target_link_libraries(traverse_triangle ${OpenCV_LIBRARIES})
+# add_executable(traverse_triangle traverse_triangle.cpp)
+# target_link_libraries(traverse_triangle ${OpenCV_LIBRARIES})
 
 add_executable(iou iou.cpp)
 target_link_libraries(iou ${OpenCV_LIBRARIES})

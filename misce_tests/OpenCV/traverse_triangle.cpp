@@ -13,7 +13,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 
-fillBottomFlatTriangle(cv::Mat& mat, cv::Vec2i& v1, cv::Vec2i& v2, cv::Vec2i& v3) {
+void fillBottomFlatTriangle(cv::Mat& mat, cv::Vec2i& v1, cv::Vec2i& v2, cv::Vec2i& v3) {
     float invslope1 = (v2[0] - v1[0]) / (v2[1] - v1[1]);
     float invslope2 = (v3[0] - v1[0]) / (v3[1] - v1[1]);
 
@@ -28,7 +28,7 @@ fillBottomFlatTriangle(cv::Mat& mat, cv::Vec2i& v1, cv::Vec2i& v2, cv::Vec2i& v3
     }
 }
 
-fillTopFlatTriangle(cv::Vec2i& v1, cv::Vec2i& v2, cv::Vec2i& v3) {
+void fillTopFlatTriangle(cv::Vec2i& v1, cv::Vec2i& v2, cv::Vec2i& v3) {
     float invslope1 = (v3[0] - v1[0]) / (v3[1] - v1[1]);
     float invslope2 = (v3[0] - v2[0]) / (v3[1] - v2[1]);
 
