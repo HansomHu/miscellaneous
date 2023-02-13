@@ -17,6 +17,7 @@ def validation_check(coordtype, coords, img):
         if len(tmp) == 0:
             return False
     else:
+        coords = [x * scale_ratio for x in coords]
         if coords[0] < 0 or coords[0] >= img.width():
             return False
         if coords[1] < 0 or coords[1] >= img.height():
