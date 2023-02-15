@@ -658,8 +658,30 @@ void test_base_class_with_no_destructor() {
         Child() = default;
         virtual ~Child() = default;
     };
+    class BaseVirtualDestructor {
+    public:
+        virtual ~BaseVirtualDestructor() { std::cout << "BaseVirtualDestructor()" << std::endl; }
+        Base a;
+    };
+    class ChildLevel1 : public BaseVirtualDestructor {
+    public:
+        // no need to explicitly declare virtual
+        ~ChildLevel1() { std::cout << "~ChildLevel1()" << std::endl; }
+    };
+    class ChildLevel2 : public ChildLevel1 {
+    public:
+        // no need to explicitly declare virtual
+        ~ChildLevel2() { std::cout << "~ChildLevel2()" << std::endl; }
+    };
 
-    Child child;
+    // Child child;
+    // ChildLevel2 childLevel2;
+    std::shared_ptr<BaseVirtualDestructor> ptr1 = std::static_pointer_cast<BaseVirtualDestructor>(std::make_shared<ChildLevel1>());
+    std::cout << ptr1.use_count() << std::endl; // print 1
+    std::shared_ptr<BaseVirtualDestructor> ptr2 = std::static_pointer_cast<BaseVirtualDestructor>(std::make_shared<ChildLevel2>());
+    std::cout << ptr2.use_count() << std::endl; // print 1
+    std::shared_ptr<ChildLevel1> ptr3 = std::static_pointer_cast<ChildLevel1>(std::make_shared<ChildLevel2>());
+    std::cout << ptr3.use_count() << std::endl; // print 1
 }
 
 void test_sizeof() {
@@ -829,13 +851,13 @@ int main(int argc, char** argv) {
     // signal(SIGSEGV, signal_handler);
     // test_backtrace();
     // test_regex();
-    // test_base_class_with_no_destructor();
+    test_base_class_with_no_destructor();
     // test_sizeof();
     // int n;
     // std::cin >> n;
     // test_dynamic_array(n);
     // test_cast_array_to_struct_pointer();
-    test_priority_queue();
+    // test_priority_queue();
 
     return 0;
 }
